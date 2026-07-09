@@ -26,6 +26,7 @@ import sys
 import os
 import json
 import time
+import random
 import traceback
 
 sys.path.insert(0, r"C:\Users\islab01\vla-atlas")
@@ -94,6 +95,13 @@ SUITES = {
 }
 
 
+def set_seed(s):
+    random.seed(s)
+    np.random.seed(s)
+    torch.manual_seed(s)
+    torch.cuda.manual_seed_all(s)
+
+
 def load_backbone(device="cuda"):
     bb = SmolVLM2Backbone(device=device)
     bb.model = bb.model.to(torch.bfloat16)
@@ -132,7 +140,10 @@ def build_chunks(actions_2d, chunk_len=CHUNK_LEN):
 BACKBONE_HEADS = {"ar_tokens", "fast_tokens"}
 
 
-def train_head(head_name, pooled_cache, action_cache, hidden_size, device, bb=None):
+def train_head(head_name, pooled_cache, action_cache, hidden_size, device, bb=None, seed=0):
+    # Seeds head init AND the per-epoch randperm below. Without this, run-to-run
+    # variance is unquantified and no number from this function is a result.
+    set_seed(seed)
     head_cls = HEAD_CLASSES[head_name]
     if head_name in BACKBONE_HEADS:
         head = head_cls(hidden_size, bb).to(device)
