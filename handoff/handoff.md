@@ -1,6 +1,27 @@
 # VLA Project Handoff
 
-Last updated: 2026-07-08
+Last updated: 2026-07-09
+
+## 2026-07-09 — DIRECTION A IS DEAD. Read `reports/probe-result-2026-07-09.md` first.
+
+A linear ridge probe on the *frozen* pooled features predicts **R²=0.75** of held-out action variance
+(shot50, libero_long; shuffled control ≈0). Mean-centering drops pooled cosine similarity from
+**0.996 to 0.004**. The "vision-encoder representation collapse" was an uncentered-cosine artifact —
+raw pixels score 0.9667 on the same metric. The information was always there.
+
+Therefore, everything below dated 2026-07-07/08 that rests on "frozen backbone = information
+bottleneck" is **superseded**, specifically: the unfreeze+VICReg plan, the Phase-0 gate, and the
+0.996→0.28 de-collapse result (which is circular — the VICReg penalty optimizes the reported metric).
+The smoke-test logs remain valid as logs; their *interpretation* does not.
+
+Hard constraint going forward: **backbone stays frozen; the deliverable is a plug-in module.**
+Open question is now the gap between R²=0.75 representational sufficiency and 0–19% task success.
+
+Also: `libero_plus` shares `libero_long`'s hdf5 and init states — as configured it is a language-
+paraphrase cell on identical frames, not a robustness eval. Do not report it as robustness.
+
+---
+
 
 ## 2026-07-08 UPDATE — direction pivot to A + Phase 0 launched (read this first)
 
