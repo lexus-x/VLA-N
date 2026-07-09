@@ -20,6 +20,49 @@ Open question is now the gap between R²=0.75 representational sufficiency and 0
 Also: `libero_plus` shares `libero_long`'s hdf5 and init states — as configured it is a language-
 paraphrase cell on identical frames, not a robustness eval. Do not report it as robustness.
 
+### There was never a VLA in this project
+
+The stack under test was SmolVLM2-500M (a **VLM**) frozen, `pooled = hidden.mean(dim=1)` over ~1150
+tokens (`backbone.py:72`), and an MLPResNet head. That is not OpenVLA-OFT, not VLA-Adapter, not
+SmolVLA. `head_l1_chunk.py:5-17` says outright that it dropped OFT's per-action-token hidden states,
+FiLM conditioning and parallel decoding in favour of the single pooled vector. It has never
+reproduced any published number, so its 2–19% success measures the reimplementation, not a VLA.
+
+Contrast with the real SmolVLA config (`HuggingFaceVLA/smolvla_libero`, cached on a100):
+
+| | homegrown | SmolVLA |
+|---|---|---|
+| conditioning | mean-pooled single vector | action expert over token sequence |
+| `chunk_size` | 8 | 50 |
+| actions executed per observation | 8, blind | **1** |
+| proprioception | none | `observation.state` |
+| cameras | 1 | 2 |
+
+Two of the three remaining suspects (blind 8-step chunk execution; no proprio/history) are precisely
+what SmolVLA does differently. Mean-pooling — which discards *where* the gripper and objects are — is
+now the leading explanation for R²=0.78 open-loop alongside ~0% closed-loop.
+
+### DECISION (user-confirmed 2026-07-09): base model is SmolVLA 450M via lerobot
+
+Reproduce SmolVLA's published LIBERO number first; build the plug-in module against a real,
+reproduced baseline. A "+X%" claim against a broken reimplementation is unpublishable.
+
+**a100 stack VERIFIED WORKING 2026-07-09** (contradicts the 2026-07-08 note that no env had LIBERO):
+
+- env `lerobot` (miniconda): lerobot 0.4.4 (source at `/home/user/lerobot`), torch 2.7.1+cu126, CUDA ok
+- `SmolVLAPolicy` imports from `lerobot.policies.smolvla.modeling_smolvla`
+- `lerobot.envs` ships **`libero`** and **`metaworld`**; `hf_libero==0.1.3` installed
+- **`MUJOCO_GL=egl` renders headless.** LIBERO `OffScreenRenderEnv` created, agentview 128×128,
+  48403 non-zero px. The `EGLError` traces are teardown-only ("Exception ignored") — harmless.
+- **mujoco 3.4.0 + robosuite 1.4.0 work together.** Pin mujoco to 3.4.0; the `mj_fullM()` break was
+  mujoco 3.10.0. No patch needed in this env.
+- Cached: `HuggingFaceVLA/smolvla_libero` (LIBERO-finetuned ckpt), `lerobot/smolvla_base`,
+  `lerobot/smolvla_metaworld`; LIBERO datasets in LeRobot format (all 4 suites).
+- GPU: 13/80 GB used by another user.
+
+Next: eval `smolvla_libero` on one suite, small episode count, to establish the reproduced baseline.
+Then design the module.
+
 ---
 
 
