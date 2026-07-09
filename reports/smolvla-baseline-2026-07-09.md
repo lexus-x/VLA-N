@@ -54,8 +54,34 @@ from counts, not matched strings. Good enough to establish in-distribution; do n
 | env fps | LiberoEnv default 30; training data fps **10** — check this mismatch before trusting timing-sensitive claims |
 | max episode steps | 520 |
 
+## Batching: measured ~7× throughput, and a setup hazard
+
+| | `batch_size=1` | `batch_size=10` |
+|---|---|---|
+| per control step | 1.16 s/it | 1.66 s/it |
+| episodes in flight | 1 | 10 |
+| effective throughput | 1× | **~7×** |
+| GPU util | ~6 % | ~38 % |
+
+Batching 10 parallel envs costs only 1.43× per step, so it buys ~7× wall-clock. Worth doing.
+
+**Setup hazard:** `lerobot_eval.py:754` iterates a *materialized* list of `(task_group, task_id, env)`,
+so **all 10 tasks × `batch_size` envs are constructed before any rollout begins** — 100 MuJoCo envs at
+`batch_size=10`. That is ~7 min of CPU-bound setup and ~42 GB RSS before the first step, and it scales
+with `batch_size`. At `batch_size=50` (full protocol in one shot) this would build 500 envs; don't.
+Loop over tasks with `--env.task_ids=[i]` instead.
+
+GPU during rollout: 66/80 GB total, of which ~18 GB belongs to another user. Headroom is thin — a
+larger `batch_size` risks OOM on a shared box.
+
+## Revised cost model
+
+520 steps × 1.66 s ≈ 14.4 min per task worst case (less when episodes succeed early). Full standard
+protocol (50 eps × 10 tasks) at `batch_size=10` ≈ **12 GPU-hours**, not 67. Feasible, but plan it.
+
 ## Status
 
-Baseline run launched detached: 10 episodes/task × 10 tasks, `batch_size=10`, seed 1000 →
-`/home/user/vla-atlas/eval_baseline_libero10/run1`. Compare its `pc_success` against SmolVLA's
-published LIBERO-Long figure (~71 %, protocol-dependent) before building anything on top.
+Baseline run in flight (PID 2594051, launched 13:36): 10 episodes/task × 10 tasks, `batch_size=10`,
+seed 1000 → `/home/user/vla-atlas/eval_baseline_libero10/run1`. ETA ~2.5 h.
+Compare its `pc_success` against SmolVLA's published LIBERO-Long figure (~71 %, protocol-dependent)
+before building anything on top. **10 eps/task is not the standard 50 — label it as such.**
