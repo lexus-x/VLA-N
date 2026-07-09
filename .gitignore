@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# data + caches: too large for git, regenerate from LIBERO
+*.pt
+*.hdf5
+*.log
+heartbeat.txt
+
+# secrets — never commit
+.env
+*token*
+.credentials.json

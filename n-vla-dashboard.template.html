@@ -1,0 +1,274 @@
+<title>VLA-Atlas Dashboard</title>
+<style>
+  :root {
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --blue: #2a78d6;
+    --good: #0ca30c;
+    --warning: #fab219;
+    --serious: #ec835a;
+    --critical: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted: #898781;
+      --grid: #2c2c2a;
+      --border: rgba(255,255,255,0.10);
+      --blue: #3987e5;
+      --good: #0ca30c;
+      --warning: #fab219;
+      --serious: #ec835a;
+      --critical: #e66767;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px;
+    background: var(--page);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  h2 { font-size: 1.05rem; margin: 0 0 12px; color: var(--text-primary); }
+  .subtitle { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px; }
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+  }
+  .header-row {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    flex-wrap: wrap; gap: 12px; margin-bottom: 8px;
+  }
+  .refresh-box { text-align: right; font-size: 0.82rem; color: var(--text-muted); }
+  .refresh-box button {
+    font: inherit; font-size: 0.82rem; padding: 5px 12px; margin-left: 8px;
+    border-radius: 6px; border: 1px solid var(--border); background: var(--surface-1);
+    color: var(--text-primary); cursor: pointer;
+  }
+  .refresh-box button:hover { border-color: var(--blue); color: var(--blue); }
+  .stat-row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .stat-tile {
+    flex: 1 1 160px; background: var(--page); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 14px;
+  }
+  .stat-tile .label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.02em; }
+  .stat-tile .value { font-size: 1.4rem; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .stat-tile .sub { font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--grid); }
+  th { color: var(--text-muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.02em; }
+  td { font-variant-numeric: tabular-nums; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 0.78rem; font-weight: 600; padding: 2px 9px; border-radius: 999px;
+  }
+  .badge-good { color: var(--good); background: color-mix(in srgb, var(--good) 14%, transparent); }
+  .badge-warning { color: #8a6100; background: color-mix(in srgb, var(--warning) 22%, transparent); }
+  .badge-critical { color: var(--critical); background: color-mix(in srgb, var(--critical) 14%, transparent); }
+  .badge-neutral { color: var(--text-secondary); background: color-mix(in srgb, var(--text-secondary) 14%, transparent); }
+  @media (prefers-color-scheme: dark) { .badge-warning { color: #ffce5c; } }
+  .timeline { list-style: none; margin: 0; padding: 0; }
+  .timeline li { padding: 10px 0 10px 20px; border-left: 2px solid var(--grid); position: relative; margin-left: 4px; }
+  .timeline li:last-child { border-left-color: transparent; }
+  .timeline li::before {
+    content: ""; position: absolute; left: -5px; top: 14px;
+    width: 8px; height: 8px; border-radius: 50%; background: var(--blue);
+  }
+  .timeline .date { font-size: 0.78rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .timeline .title { font-weight: 600; margin: 2px 0 4px; }
+  .timeline .desc { color: var(--text-secondary); font-size: 0.9rem; }
+  code { background: var(--grid); padding: 1px 5px; border-radius: 4px; font-size: 0.85em; }
+  .muted { color: var(--text-muted); }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) { .two-col { grid-template-columns: 1fr; } }
+  a { color: var(--blue); }
+</style>
+
+<div class="wrap">
+  <div class="header-row">
+    <div>
+      <h1>VLA-Atlas Dashboard</h1>
+      <div class="subtitle">&lt;500M-param action-representation atlas &mdash; project explainer + live run status</div>
+    </div>
+    <div class="refresh-box">
+      Last refreshed: <strong><!--LIVE_TS--></strong><br>
+      <span class="muted">auto-refreshes every <!--LIVE_INTERVAL-->s</span>
+      <button onclick="location.reload()">Refresh now</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Live status &mdash; a6000-left</h2>
+    <div class="stat-row">
+      <div class="stat-tile">
+        <div class="label">GPU0 (reserved, off-limits)</div>
+        <div class="value"><!--LIVE_GPU0_MEM--></div>
+        <div class="sub"><!--LIVE_GPU0_UTIL-->% util</div>
+      </div>
+      <div class="stat-tile">
+        <div class="label">GPU1 (ours)</div>
+        <div class="value"><!--LIVE_GPU1_MEM--></div>
+        <div class="sub"><!--LIVE_GPU1_UTIL-->% util</div>
+      </div>
+      <div class="stat-tile">
+        <div class="label">Python processes</div>
+        <div class="value"><!--LIVE_PROC_COUNT--></div>
+        <div class="sub"><!--LIVE_JOB_STATUS--></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Latest validation results &mdash; <code><!--LIVE_RESULTS_FILE--></code></h2>
+    <table>
+      <thead><tr><th>Cell</th><th>Success rate</th><th>Mean jerk</th><th>Hz</th></tr></thead>
+      <tbody>
+<!--LIVE_RESULTS_ROWS-->
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Goal</h2>
+    <p>A novel &lt;500M-param VLA contribution, publishable Q1&ndash;Q3, on a 1&times;A100-class budget. Standard LIBERO average is saturated (94&ndash;99% across 0.5B&ndash;7B models) &mdash; not a publishable headline anymore. Settled direction: a controlled <strong>action-representation atlas</strong> &mdash; one fixed backbone, 5 action heads, measuring a <strong>few-shot data-efficiency crossover</strong> (does a compact-output head beat a raw-chunk head at low demo counts?) across LIBERO-Long, LIBERO-Plus, and Meta-World-hard, the axes where models still discriminate.</p>
+  </div>
+
+  <div class="card">
+    <h2>Architecture</h2>
+    <p class="muted" style="margin-top:-6px">SmolVLM2-500M (507.5M params), frozen, loaded once and shared across all 5 heads. Only the action head trains.</p>
+    <table>
+      <thead><tr><th>Head</th><th>Style</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>l1_chunk</td><td>Direct L1 chunk regression (OpenVLA-OFT)</td><td><span class="badge badge-good">&#9679; only real signal</span> 8&ndash;19% success, scales with demos</td></tr>
+        <tr><td>ar_tokens</td><td>AR digit-tokens (VLA-0)</td><td><span class="badge badge-neutral">&#9679; fixed, 0% success</span> jerk 1.3&ndash;3.1</td></tr>
+        <tr><td>fast_tokens</td><td>FAST/DCT tokens (pi0-FAST)</td><td><span class="badge badge-good">&#9679; decode bug fixed today</span> jerk 9.1&ndash;9.8, 0% success</td></tr>
+        <tr><td>bspline</td><td>Compact spline coefficients (BEAST)</td><td><span class="badge badge-critical">&#9679; no real signal</span> early hit resolved to noise at N=100</td></tr>
+        <tr><td>flow_matching</td><td>Flow matching (SmolVLA-style, simplified)</td><td><span class="badge badge-critical">&#9679; no signal</span> 0% across the board</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Compute inventory</h2>
+    <table>
+      <thead><tr><th>Resource</th><th>Access</th><th>State</th></tr></thead>
+      <tbody>
+        <tr><td>a6000-left</td><td>SSH, 2&times; RTX A6000 49GB</td><td><strong>Primary.</strong> GPU1 only &mdash; GPU0 reserved for another lab project, never use it.</td></tr>
+        <tr><td>a6000-mid</td><td>SSH, 2&times; RTX A6000 49GB</td><td>Mirrored env, verified working, no experiments run there yet.</td></tr>
+        <tr><td>a100 / blackwell / a6000 / blackwell2</td><td>SSH, various</td><td>Reachable, no env set up. Shared lab machines &mdash; check <code>nvidia-smi</code> before use.</td></tr>
+        <tr><td>Modal</td><td>2 accounts (lalithsai00, lalith)</td><td>$50 real-money budget total. GPU verified (T4). Nothing built beyond a throwaway test.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Timeline</h2>
+    <ul class="timeline">
+      <li>
+        <div class="date">2026-07-02 &ndash; 07-04</div>
+        <div class="title">Infrastructure built</div>
+        <div class="desc">Backbone + 5 action heads smoke-tested on shared SmolVLM2-500M. LIBERO patched for Windows, LIBERO-Plus language-perturbation confirmed, Meta-World-hard scripted-demo generation confirmed (100% on push-v3).</div>
+      </li>
+      <li>
+        <div class="date">~07-05 (~20h23m wall-clock)</div>
+        <div class="title">First-pass sweep &mdash; 30 cells</div>
+        <div class="desc">5 heads &times; 2 shot-levels &times; 3 suites, reduced eval (N=30, 250-step cap). Only <code>l1_chunk</code> showed any real success (2&ndash;19%); everything else ~0%. Confounded by frozen backbone + placeholder GRU decoders on the two AR heads.</div>
+      </li>
+      <li>
+        <div class="date">~07-05 (~3h18m follow-up)</div>
+        <div class="title">Refined N=100 evaluation</div>
+        <div class="desc"><code>l1_chunk</code> confirmed real and scaling with demos (8&ndash;19%); <code>bspline</code>'s one promising cell resolved to noise (3.3% &rarr; 0.0%).</div>
+      </li>
+      <li>
+        <div class="date">~07-06</div>
+        <div class="title">Decoder porting</div>
+        <div class="desc">Replaced placeholder GRU decoders with real frozen-vocab decoding. <code>ar_tokens</code> improved substantially (jerk 79&ndash;109 &rarr; 0.99&ndash;10.5). <code>fast_tokens</code> showed no change &mdash; traced to eval teacher-forcing on a dummy zero target instead of real autoregressive generation.</div>
+      </li>
+      <li>
+        <div class="date">2026-07-07</div>
+        <div class="title"><code>fast_tokens</code> decode bug &mdash; root-caused, fixed, validated</div>
+        <div class="desc">Root cause: <code>forward()</code>'s loss never included an EOS training target, so <code>generate()</code> always ran to the 56-token safety cap &mdash; feeding <code>physical-intelligence/fast</code>'s <code>decode()</code> an over-length sequence silently triggered its all-zero fallback (the frozen <code>mean_jerk=0.0041915...</code> constant seen in every prior run). Fix: train on an appended <code>eos_id</code> target. Confirmed at the token level (EOS hit 10/10, decode succeeds) and at the metric level (re-validation: <code>mean_jerk</code> now 9.07&ndash;9.78, no longer frozen; <code>success_rate</code> still 0%, matching <code>ar_tokens</code>' known limitation &mdash; not a regression).</div>
+      </li>
+      <li>
+        <div class="date">2026-07-07 evening</div>
+        <div class="title">Frozen-backbone representation bottleneck confirmed &mdash; novelty re-checked</div>
+        <div class="desc">Two cheap no-training diagnostics: cached pooled features are 99.6&ndash;99.9% cosine-similar across wildly different robot states (targets differ by ~3 L2), and neither image-token-only pooling nor last-token hidden state fix it &mdash; ruling out a pooling bug and confirming a real frozen-backbone information bottleneck. Novelty check: crossing backbone-freezing strategy with action-head type at &lt;500M is <strong>not scooped</strong> (nearest: arXiv 2605.25802, 2601.03309, 2606.14153, and OpenVLA-OFT 2502.19645 which fixes LoRA as its only adaptation strategy) &mdash; this strengthens the paper's contribution.</div>
+      </li>
+      <li>
+        <div class="date">2026-07-07 night</div>
+        <div class="title">Bottleneck pinpointed to the vision encoder, not the LLM decoder</div>
+        <div class="desc">Per-layer probe across all 32 <code>LlamaModel</code> decoder layers: collapse is already ~1.0000 at layer 0 (right after the vision encoder+connector), and the 32 decoder layers only <em>help</em> (recovering to ~0.997), never hurt. Raw pixels alone are meaningfully different (cos_sim 0.9667) &mdash; confirming the frozen <code>vision_model</code>+<code>connector</code> (~98M of the 507M params) throws away most of the signal before the LLM ever sees it.</div>
+      </li>
+      <li>
+        <div class="date">2026-07-07 late night</div>
+        <div class="title">Smoke test v1: naive unfreezing makes collapse <em>worse</em></div>
+        <div class="desc">Unfroze <code>vision_model</code>+<code>connector</code>, trained jointly with an <code>l1_chunk</code> head on 22 samples, plain L1 loss: task loss dropped (0.44&rarr;0.25) but pooled cos_sim went from 0.9961 to a perfectly-collapsed <strong>1.0000</strong>. Classic representation collapse &mdash; easier for gradient descent to collapse the encoder and predict the mean target than to actually discriminate frames. v2 added a VICReg-style variance-preservation penalty to fight this directly.</div>
+      </li>
+      <li>
+        <div class="date">2026-07-08</div>
+        <div class="title">v2 hit a resource bug &mdash; stuck near-OOM on <code>a6000-left</code> GPU1</div>
+        <div class="desc">A batch_size=8 update pinned GPU1 at 48.4/49.1GB and made it crawl (~20-30 min/epoch instead of the expected minutes). Confirmed NOT hung after a few checks &mdash; var_loss dropping steadily (0.91&rarr;0.18), task_loss too (0.52&rarr;0.27), never collapsed, never crashed.</div>
+      </li>
+      <li>
+        <div class="date">2026-07-08</div>
+        <div class="title"><strong>Fix confirmed: cos_sim 0.9961 &rarr; 0.2845</strong></div>
+        <div class="desc">All 15 epochs completed cleanly. Pooled cosine similarity across the 43 samples went from near-total collapse (0.9961) to genuinely differentiated (0.2845 mean, min <strong>-0.0681</strong>) &mdash; strong evidence both the root-cause diagnosis (vision-encoder collapse) and the fix (unfreeze + variance regularization) are correct. Open question: does this translate to real task success_rate, which needs an actual LIBERO eval, not just cos_sim.</div>
+      </li>
+      <li>
+        <div class="date">2026-07-08</div>
+        <div class="title">Batching bug diagnosis corrected</div>
+        <div class="desc">Built a genuinely batched version (v3) to fix what looked like a "Python loop vs batched forward" bug &mdash; confirmed correct (same BEFORE cos_sim) but hit the <em>same</em> 48GB ceiling once backward passes started. The real lever is batch size itself (activations for N samples &times; 32 layers must be retained for backward regardless of loop-vs-batched), not the calling pattern. Real experiment needs batch_size 2-4 or gradient checkpointing instead.</div>
+      </li>
+      <li>
+        <div class="date">2026-07-08</div>
+        <div class="title">Open question: is the anti-collapse fix robust run-to-run?</div>
+        <div class="desc">v3's var_loss isn't declining like v2's did at the same epoch (0.80-0.98 vs 0.33-0.45), same hyperparameters, only the unseeded init/shuffling differs. task_loss still tracking similarly. Not resolved yet &mdash; worth multi-seed testing before trusting a single confirmatory run for the real experiment.</div>
+      </li>
+      <li>
+        <div class="date">2026-07-08</div>
+        <div class="title">Real-experiment proposal drafted &mdash; awaiting go-ahead</div>
+        <div class="desc">Vision-encoder+connector unfreeze with variance regularization, 5 heads &times; {shot10, shot50} on libero_long (10 cells), with a corrected (smaller) batch size. Cost: loses the feature-caching optimization entirely &mdash; realistically a full day or more of shared-GPU time. Not launched without explicit sign-off; see <code>handoff.md</code> for the full proposal.</div>
+      </li>
+    </ul>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <h2>Open decisions</h2>
+      <ol style="padding-left:18px; font-size:0.9rem; color:var(--text-secondary)">
+        <li><strong>Backbone freezing strategy</strong> &mdash; diagnostic confirms frozen features are a real bottleneck (99%+ cosine similarity across different robot states). Planned cheapest test: trainable last-K backbone layers on an earlier cached layer, not a full unfreeze. Not yet implemented.</li>
+        <li><strong>Scope expansion order</strong> &mdash; fix decoders (done) &rarr; validate backbone-adaptation hypothesis (diagnosed, experiment not yet run) &rarr; expand task/suite coverage &rarr; add &ge;3 seeds &rarr; scale eval N toward 500/cell.</li>
+        <li><strong>Modal vs. lab GPUs</strong> &mdash; lean toward free lab GPUs for bulk work, Modal only for quick/cheap validation (real-money budget).</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h2>Publication readiness</h2>
+      <p style="font-size:0.9rem; color:var(--text-secondary)">Not ready for TMLR / RA-L / CoRL &mdash; needs the resolved-confound, full-coverage, multi-seed atlas. Current stage would only support a non-archival workshop submission as a preliminary pipeline report.</p>
+    </div>
+  </div>
+
+  <p class="muted" style="font-size:0.78rem; text-align:center; margin-top:8px">
+    Generated by <code>scripts/gen_dashboard.sh</code> &middot; source: <code>handoff/handoff.md</code>, <code>reports/*.md</code>
+  </p>
+</div>
+
+<script>
+  (function() {
+    var interval = <!--LIVE_INTERVAL-->;
+    setTimeout(function() { location.reload(); }, interval * 1000);
+  })();
+</script>
