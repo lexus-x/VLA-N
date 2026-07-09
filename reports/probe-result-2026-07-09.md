@@ -47,10 +47,60 @@ about LIBERO-Plus robustness from these cells would be wrong.
 Corollary worth checking: swapping the instruction moved pooled cos_raw by <0.0001, i.e. the text
 side barely affects the pooled vector at all.
 
-## Next gate (cheap, decides whether a paper exists)
+## Gate 2 (run 2026-07-09): the head is not underfitting either
 
-Train `l1_chunk` on the same cached features and compare its **held-out R²** against ridge's 0.7538.
+`scratch_pull/diag_head_vs_probe.py`, same demo split, `common.py`'s exact recipe
+(EPOCHS=60, BATCH_SIZE=32, LR=1e-4, Adam), `libero_long` shot50. Ridge reproduced at
+R²=0.7538 exactly, confirming the split matches.
 
-- head R² ≪ 0.75 → the head/training pipeline is underfitting a signal a linear model finds. A bug, not a paper.
-- head R² ≈ 0.75 but success stays 0–19% → representational sufficiency without closed-loop competence.
-  That gap is the module target, and it is a real research question.
+| model | held-out R² | held-out MAE |
+|---|---|---|
+| ridge (L2 fit) | +0.7538 | 0.1227 |
+| **l1_chunk (L1 fit)** | **+0.7755** | **0.0830** |
+
+l1_chunk train R²=0.8654 / MAE=0.0625 → train-test R² gap +0.090, so it is not badly
+overfitting either. MAE is reported because l1_chunk minimizes L1 (conditional median)
+while ridge minimizes L2, and R² is an L2 metric that mildly favors ridge. l1_chunk wins
+on **both**.
+
+**Conclusion: representation is fine, and the readout is fine.** Frozen pooled features
+carry the signal, and the sweep's own head extracts it better than a linear model does.
+Yet the same head scores 2–19% task success. The failure is in the **closed loop**.
+
+## Gate 3 (run 2026-07-09): NOT a train/eval frame mismatch — hypothesis refuted
+
+Training reads `agentview_rgb` from hdf5 (`sweep.py:96`); eval reads `agentview_image`
+from `OffScreenRenderEnv` (`sweep.py:227`); neither applies a transform. OpenVLA's LIBERO
+eval applies `img[::-1, ::-1]` to the env observation, so a 180° mismatch was the leading
+suspect — it would exactly reproduce "great open-loop fit, ~0% closed-loop."
+
+`scratch_pull/diag_frame_parity.py` resets the env to demo 0's recorded init state and
+compares the rendered frame to the hdf5 frame under each candidate transform:
+
+| transform | RMSE vs hdf5 frame |
+|---|---|
+| **identity** | **15.58** |
+| flip horizontal | 35.59 |
+| flip vertical | 43.84 |
+| rotate 180 | 45.82 |
+
+Identity wins by ~3×. **The frames already agree; there is no orientation bug.** (Residual
+15.58 is state drift between `set_init_state` and the recorded frame, not orientation.)
+
+## Where that leaves us
+
+Eliminated: representation collapse, head underfitting, frame orientation.
+Remaining suspects for the open-loop → closed-loop gap, in order of cheapness:
+
+1. **Blind chunk execution.** `eval_libero` runs all 8 actions of a predicted chunk before
+   re-observing (`sweep.py:233-236`). 8 steps × 20 Hz = 0.4 s open-loop per observation.
+   Per-step MAE 0.083 compounds across them.
+2. **`MAX_STEPS=250`** vs LIBERO's own 600 (`common.py:58`) — episodes may simply be truncated.
+3. **No proprioception and no history.** The head conditions on a pooled image+text vector
+   only. `obs["robot0_eef_pos"]` is available in the eval loop and never used. At a fixed
+   image, demo actions are multimodal across task phases; 22% unexplained variance is
+   consistent with that ambiguity.
+
+Next: re-run one eval cell with (a) 1 action per chunk instead of 8, (b) MAX_STEPS=600.
+If success moves, the gap is drift, and a frozen-backbone plug-in module that stabilizes
+closed-loop execution is a real, well-scoped target. If it does not move, suspect (3).
