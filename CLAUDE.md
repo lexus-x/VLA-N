@@ -32,7 +32,7 @@ Fan-out novelty sweeps cost real money (the last two were 75 and 99 agents). Rul
 ## Shared-GPU rules
 
 - `a6000-left` **GPU0 is off-limits** (reserved: fishonet). GPU1 only.
-- All hosts are shared. `nvidia-smi` + check process owner before launching. `scripts/gpu_check.sh` = all-6 snapshot.
+- All hosts are shared. `nvidia-smi` + check process owner before launching. `./gpu.sh` = all-6 snapshot (`--loop [secs]` live, `--selftest` parser checks). `free*` means "nothing allocated right now", not "unowned".
 - SSH lands in `cmd.exe`, not bash: `ssh -o ConnectTimeout=10 -o BatchMode=yes <host> "<cmd>"`. `a100` is the one Linux box.
 - Long jobs must survive disconnect → launch via WMI: `Invoke-CimMethod -ClassName Win32_Process -MethodName Create`. Not `start`/`Start-Process`.
 - File transfer is `scp`/SSH only.

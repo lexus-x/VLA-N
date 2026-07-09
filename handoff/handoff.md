@@ -117,7 +117,7 @@ Novel <500M-param VLA (Vision-Language-Action) contribution, publishable Q1-Q3, 
 | `a100`, `blackwell`, `a6000`, `blackwell2` (SSH aliases) | Various | Confirmed reachable, no environment set up. Shared lab machines — check `nvidia-smi` before use, other jobs come and go. |
 | Modal | 2 accounts: `lalithsai00`, `lalith` (active) | $50 budget total, real money — monitor spend. GPU access verified (T4). Nothing built there yet beyond a throwaway test. |
 
-Live GPU dashboard: `bash scripts/gpu_dashboard.sh` (all 6 SSH hosts) or `bash scripts/vla_dashboard.sh` (a6000-left + experiment progress), 5s refresh.
+Live GPU dashboard: `bash gpu.sh --loop` (all 6 SSH hosts, project root) or `bash scripts/vla_dashboard.sh` (a6000-left + experiment progress), 5s refresh. `gpu.sh` replaced `scripts/gpu_check.sh` + `scripts/gpu_dashboard.sh` on 2026-07-09.
 
 ## What's built (all on `a6000-left`, replicated on `a6000-mid`)
 
