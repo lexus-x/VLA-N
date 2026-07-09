@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # GPU monitor across all 6 lab hosts. Replaces scripts/gpu_check.sh + scripts/gpu_dashboard.sh.
 #
-#   ./gpu.sh              one-shot snapshot
-#   ./gpu.sh --loop       live, refresh every 5s
-#   ./gpu.sh --loop 15    live, refresh every 15s
+#   ./gpu.sh              live, refresh every 5s, runs until Ctrl+C (default)
+#   ./gpu.sh 15           live, refresh every 15s
+#   ./gpu.sh --once       one-shot snapshot, then exit
 #   ./gpu.sh --selftest   parser checks against fixtures, no SSH, no GPU
 #
 # Robustness the old scripts lacked (each one bit us or was one driver away from it):
@@ -113,18 +113,32 @@ selftest() {
   echo "selftest OK"
 }
 
+usage() { sed -n '2,9p' "$0" | sed 's/^# \?//'; }
+
+# Double-clicked from Explorer? The window dies with the shell on any exit path.
+# Hold it open so the error or the usage text is actually readable.
+# ponytail: only when stdin is a TTY -- otherwise this would hang CI/pipes forever.
+hold_open() { [ -t 0 ] && { echo; read -r -n 1 -p "Press any key to close..."; echo; }; }
+
+loop() {
+  local interval=$1
+  # Ctrl+C exits cleanly instead of dumping a partial frame + trap noise.
+  trap 'echo; echo "stopped."; exit 0' INT
+  while true; do
+    clear
+    echo "GPU Dashboard  $(date '+%Y-%m-%d %H:%M:%S')  (refresh ${interval}s, Ctrl+C to quit)"
+    echo
+    snapshot
+    sleep "$interval"
+  done
+}
+
 case "${1:-}" in
   --selftest) selftest ;;
-  --loop)
-    interval="${2:-5}"
-    while true; do
-      clear
-      echo "GPU Dashboard  $(date '+%Y-%m-%d %H:%M:%S')  (refresh ${interval}s, Ctrl+C to quit)"
-      echo
-      snapshot
-      sleep "$interval"
-    done
-    ;;
-  '') snapshot ;;
-  *) sed -n '2,9p' "$0" | sed 's/^# \?//' >&2; exit 2 ;;
+  --once) snapshot ;;
+  --help | -h) usage ;;
+  '') loop 5 ;;
+  --loop) loop "${2:-5}" ;;                       # kept: old muscle memory / docs
+  *[!0-9]*) usage >&2; hold_open; exit 2 ;;       # anything non-numeric is a bad arg
+  *) loop "$1" ;;                                 # bare number = interval
 esac
