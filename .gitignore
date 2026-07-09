@@ -11,5 +11,7 @@ heartbeat.txt
 
 # secrets — never commit
 .env
-*token*
+*.token
 .credentials.json
+
+.claude/scheduled_tasks.lock
