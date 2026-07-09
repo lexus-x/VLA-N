@@ -33,7 +33,6 @@ Read the result like this:
 """
 import sys
 
-import numpy as np
 import torch
 
 sys.path.insert(0, r"C:\Users\islab01\vla-atlas")
@@ -79,7 +78,9 @@ def fit_probe(X, Y, demo_id, seed=0):
 
 for suite in ["libero_long", "libero_plus", "metaworld_push"]:
     try:
-        cache = torch.load(CACHE.format(suite), weights_only=False)
+        # map_location="cpu": caches were written from GPU; this script is CPU-only
+        # and must not touch a shared GPU that may be running someone else's job.
+        cache = torch.load(CACHE.format(suite), weights_only=False, map_location="cpu")
     except FileNotFoundError:
         print(f"{suite}: cache not found, skip", flush=True)
         continue
